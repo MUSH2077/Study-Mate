@@ -101,10 +101,13 @@ export function adaptOpenAiSkill(content, name) {
   if (name === 'learning-system') body = adaptController(body);
   if (name === 'record-keeping') {
     body = replaceRequired(body,
-      /路径以 `LEARN_WORKSPACE`（开场从 `~\/\.dsh\/studymate-config\.yaml` 读到）为前缀/,
-      '路径以 `<LEARN_WORKSPACE>`（总控开场按用户目录、环境变量、显式配置或既有学习数据确定）为前缀',
+      /路径以\*\*工作区根 `<WS>`\*\* 为前缀[\s\S]*?下面所有路径里的 `<WS>` 都指这一个值：/,
+      '路径以 `<LEARN_WORKSPACE>`（总控开场按用户目录、环境变量、显式配置或既有学习数据确定）为前缀；下面所有路径里的 `<LEARN_WORKSPACE>` 都指这一个值：',
       'record-keeping workspace');
     body = body.replace('绝不写会话目录', '不写插件缓存或工作区之外的会话目录');
+    // 本插件不读 DSH 的 studymate-config.yaml，工作区根一律记作 `<LEARN_WORKSPACE>`
+    body = body.replaceAll('~/.dsh/studymate-config.yaml', '宿主的全局工作区配置')
+      .replaceAll('<WS>', '<LEARN_WORKSPACE>');
     body = body.replace('`goal` 先跟学生确认', '`goal` 以学生明确指令为准，有歧义才澄清');
     body = body.replace('`current` 变了先跟学生确认', '`current` 按学生明确选择更新，有歧义才澄清');
     body = body.replace('同时在对话里给一条 `memory_updates` 建议，学生确认后写进「共享记忆」',
@@ -114,6 +117,12 @@ export function adaptOpenAiSkill(content, name) {
   if (name === 'learning-system') {
     body = body.replace('`goal` 先跟学生确认', '`goal` 以学生明确指令为准，有歧义才澄清');
     body = body.replace('必须学生确认；旧使命留痕', '按学生明确变更指令执行，歧义才澄清；旧使命留痕');
+    // 暂存模式：本插件不读 DSH 的 studymate-config.yaml，工作区根一律记作 `<LEARN_WORKSPACE>`。
+    // 中文占位符 `<学习工作区>` 先换成 `<WS>`，否则下面 python 命令的占位符替换会把它
+    // 拆成「去尖括号 + 保留原引号」的 `''<学习工作区>''`。
+    body = body.replaceAll('~/.dsh/studymate-config.yaml', '宿主的全局工作区配置');
+    body = body.replaceAll("'<学习工作区>'", "'<WS>'");
+    body = body.replaceAll('<WS>', '<LEARN_WORKSPACE>');
   }
   body = body.replaceAll('.dsh/skills/', 'skills/')
     .replaceAll('/tmp', '<STUDYMATE_SCRATCH>')
@@ -121,8 +130,8 @@ export function adaptOpenAiSkill(content, name) {
     .replaceAll('（`read` 那个文件）', '（用宿主图片查看工具打开那个文件）')
     .replaceAll('`md5sum <文件> | cut -c1-12`',
       '`<python> -X utf8 -c \'import hashlib,pathlib,sys; print(hashlib.md5(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest()[:12])\' \'<文件>\'`')
-    .replaceAll('`cp -r <STUDYMATE_SCRATCH>/practice-evaluator-<节点id>/deliver/. <subject_path>/`',
-      '把 `<STUDYMATE_SCRATCH>/practice-evaluator-<节点id>/deliver/` 内的目录内容原样合并复制到 `<subject_path>/`')
+    .replaceAll("`cp -r '<subject_path>/.stage/practice-evaluator-<节点id>/deliver/.' '<subject_path>/'`",
+      '把 `<subject_path>/.stage/practice-evaluator-<节点id>/deliver/` 内的目录内容原样合并复制到 `<subject_path>/`')
     .replaceAll('`cp -r`', '目录复制')
     .replaceAll('`cp`', '原样复制')
     .replaceAll('→ cp 落', '→ 原样复制落')
@@ -131,12 +140,18 @@ export function adaptOpenAiSkill(content, name) {
     .replaceAll('(offset/limit/grep)', '（分段读取/文本搜索）')
     .replaceAll('（offset/limit/grep）', '（分段读取/文本搜索）')
     .replaceAll('`./run_tests.sh`', '当前系统可运行的测试入口');
-  body = body.replace(/python3 (<root>\/scripts\/[\w-]+\.py)([^`\n]*)/g,
-    (_, script, args) => {
+  // `python3` 与脚本路径之间允许 `-B` 这类标志：源技能要求跑引擎脚本一律加 `-B`
+  // （否则 Python 往只读的引擎目录写 `__pycache__`），标志要原样带到本机调用里。
+  body = body.replace(/python3 ((?:-[A-Za-z]+\s+)*)(<root>\/scripts\/[\w-]+\.py)([^`\n]*)/g,
+    (_, flags, script, args) => {
       const argumentsText = script.endsWith('/gen_home.py') && !args.trim()
         ? ' <LEARN_WORKSPACE>' : args;
-      return `<python> -X utf8 '${script}'${argumentsText.replace(/<[^>]+>/g, value => `'${value}'`)}`;
+      return `<python> -X utf8 ${flags}'${script}'${argumentsText.replace(/<[^>]+>/g, value => `'${value}'`)}`;
     });
+
+  // 归一：上面按 `<[^>]+>` 逐个补引号，遇到源文件里已经带引号的占位符会补成 `''<X>''`。
+  // 这类重复引号只是写法问题，统一收敛回一层（`python3 -X utf8 -B '<脚本>' '<占位符>'`）。
+  body = body.replaceAll("''<", "'<").replaceAll(">''", ">'");
 
   // DSH-only frontmatter flags are moved to agents/openai.yaml by the builder;
   // role instructions enforce the same ownership when UI policy is unavailable.

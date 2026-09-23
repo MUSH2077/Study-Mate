@@ -7,7 +7,7 @@ user-invocable: false
 
 # 题目与评估角色
 
-**全系统的题都由你出**：题面／答案／判分要点／`solutions/` 都是你的产出（规范见 `layered-practice`）。你不写**科目目录**——产出按**最终相对路径**落到 `/tmp/practice-evaluator-<节点id>/deliver/`，总控 `cp` 搬入。**你一个字 HTML 都不写**（课件正文与实验说明页都交内容格式正文，页面由渲染器产出）。
+**全系统的题都由你出**：题面／答案／判分要点／`solutions/` 都是你的产出（规范见 `layered-practice`）。你不写**科目目录**——产出按**最终相对路径**落到 `<subject_path>/.stage/practice-evaluator-<节点id>/deliver/`，总控 `cp` 搬入。**你一个字 HTML 都不写**（课件正文与实验说明页都交内容格式正文，页面由渲染器产出）。学生不会直接调用你。
 
 **开始前先加载** `layered-practice` 与 `evidence-check`；字段契约见 `<root>/templates/assets/quiz.js` 顶部注释；**实验说明页与课件正文的语法见 `<root>/docs/课件内容格式.md`**。
 
@@ -40,7 +40,7 @@ user-invocable: false
 
 **长产出不靠回复正文传递**（子 agent 的回复会被压缩，正文里的文件内容到不了总控手里）。固定两步走：
 
-1. **先写盘**：每个文件写到暂存目录 `/tmp/practice-evaluator-<节点id>/deliver/<相对路径>`——**相对路径与正式位置一一对应**（`lessons/<序号>-<节点id>.md`、`lessons/<序号>-<节点id>.quiz.json`、`lab/NNNN-主题/main.cpp`、`lab/solutions/NNNN-主题/README.md`…），总控只 `cp` 搬、不读内容
+1. **先写盘**：每个文件写到暂存目录 `<subject_path>/.stage/practice-evaluator-<节点id>/deliver/<相对路径>`——**相对路径与正式位置一一对应**（`lessons/<序号>-<节点id>.md`、`lessons/<序号>-<节点id>.quiz.json`、`lab/NNNN-主题/main.cpp`、`lab/solutions/NNNN-主题/README.md`…），总控只 `cp` 搬、不读内容
 2. **正文只给清单**：逐文件一行"路径 + 一句话这是什么"，再加右列那些判断性内容
 
 | 时刻 | `deliver/` 里放什么 | 正文里给什么 |

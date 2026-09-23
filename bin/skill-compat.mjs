@@ -37,12 +37,10 @@ export function adaptSkill(text, { platform, pythonExecutable, configFile, tempD
 
   // Replace source references before inserting real paths, which may themselves
   // be below /tmp (for example in tests or a custom Python installation).
+  // `/tmp` 在源技能里只剩两处：暂存模式的探测路径与 image-scout 的临时文件；
+  // 角色产出的暂存目录改成了科目内的 `.stage/`（它在写边界里，bwrap 下也不会被清），
+  // 所以这里不再有 practice-evaluator 的 cp 改写。
   let adapted = text.replaceAll('/tmp', temp);
-  const delivery = `${temp}/practice-evaluator-<节点id>/deliver`;
-  const copy = windows
-    ? `Get-ChildItem -LiteralPath ${quote(delivery)} -Force | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination '<subject_path>' -Recurse -Force }`
-    : `cp -r ${quote(`${delivery}/.`)} '<subject_path>/'`;
-  adapted = adapted.replaceAll(`cp -r ${temp}/practice-evaluator-<节点id>/deliver/. <subject_path>/`, copy);
   adapted = replaceConfig(adapted, portable(configFile));
   adapted = adapted.replace(/python3 (<root>\/scripts\/[\w-]+\.py)([^`\r\n]*)/g,
     (_, script, args) => `${python} ${quote(script)}${args.replace(/<(?:subject_path|curriculum\.yaml|页面路径|tsv)>/g, quote)}`);
@@ -68,5 +66,5 @@ export function adaptSkill(text, { platform, pythonExecutable, configFile, tempD
     : `使用本机 shell；单文件原样搬运用 \`cp '<源文件>' '<目标文件>'\`，目录内容原样搬运用 \`cp -r '<源目录>/.' '<目标目录>/'\`。`;
   return `${adapted.trimEnd()}\n\n## 本机命令约定（安装器生成）\n\n` +
     `只调整命令与路径写法；流程、文件归属和原样搬运要求不变。每次调用 shell 工具执行 Python 时，必须在同一条命令中先设置环境再执行脚本：\`${environment}\`；这次设置不保留到下一次工具调用。Python 使用 \`${python}\`，子进程也继承 UTF-8 编码。\n\n` +
-    `${platformNote} 临时文件使用 \`${temp}\` 下各角色自己的目录。路径占位符换成实值后必须保持 shell 引用；${windows ? "PowerShell 单引号路径中的单引号写两次" : "POSIX 单引号路径中的单引号用 '\"'\"' 转义"}，不要把路径当作未引用的命令片段。打开页面用 \`${open}\`，无桌面环境时保留可点的页面链接即可。\n`;
+    `${platformNote} 临时与暂存文件先写科目自己的 \`<subject_path>/.stage/\`（它在会话写边界内）；确实需要系统临时目录时用 \`${temp}\`。路径占位符换成实值后必须保持 shell 引用；${windows ? "PowerShell 单引号路径中的单引号写两次" : "POSIX 单引号路径中的单引号用 '\"'\"' 转义"}，不要把路径当作未引用的命令片段。打开页面用 \`${open}\`，无桌面环境时保留可点的页面链接即可。\n`;
 }
