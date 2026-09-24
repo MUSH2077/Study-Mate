@@ -6,8 +6,8 @@
 
 | 使用方 | 获取方式 | 发布位置 |
 | --- | --- | --- |
-| DSH | `npx @yunmiao/studymate@latest install` | 原有 npm 包 |
-| Codex / ChatGPT Work | 下载 `studymate-openai.zip` 后安装 | 同版本 GitHub Release 附件 |
+| DSH | `npx -y @yunmiao/studymate@latest install` | npm 包 |
+| Codex / ChatGPT Work | 下载 `studymate-openai.zip`，通过客户端提供的插件导入入口安装 | 同版本 GitHub Release 附件 |
 
 无需另外申请 npm 包名。ZIP 内的插件 manifest 版本在构建时跟随 `package.json`；不要手动提前递增版本或添加本次正式发布的 changelog，Release 流程会生成它们。
 
@@ -31,9 +31,11 @@ GitHub 发布 job 引用 `npm` environment，不要求设置审批人。仓库�
 
 1. 将希望发布的修改按正常方式合入 `main`。
 2. 打开 **Actions → Release → Run workflow**，分支选择 `main`，选择版本增量。例如 `0.1.1` 选择 `patch` 会得到 `0.1.2`。
-3. 等待检查和发布完成。任务摘要会给出 npm 包、GitHub Release 和 OpenAI 插件 ZIP 链接。新增 Codex / ChatGPT 支持这一版可选择 `minor`，从 `0.1.5` 发布为 `0.2.0`。
+3. 等待检查和发布完成。任务摘要会给出 npm 包、GitHub Release 和 OpenAI 插件 ZIP 链接。DSH 用户重跑安装命令；Codex 用户下载 ZIP，在已有插件页面上传新版本。
 
-发布前会在 Ubuntu、macOS、Windows 上分别运行 Node 22.19 / Python 3.9 和 Node 24 / Python 3.13 两组检查：`npm run test:installer`、`npm run test:openai`、所有 `scripts/tests/test_*.py`、两组 DOM 测试及发布脚本测试。当前包无 npm 依赖和 lockfile，因此不运行 `npm ci`；如果将来增加依赖，需要同时调整检查流程。无需浏览器或模型服务。
+发布前复用 **Checks**：在单个 Ubuntu runner 上使用 Node 24 / Python 3.13 运行 `npm test`，覆盖安装、OpenAI 插件打包、Python 功能测试、DOM 和发布逻辑。日常提交也使用这套检查，不再自动运行多系统、多版本或真实 DSH 的重复矩阵。当前包无 npm 依赖和 lockfile，因此不运行 `npm ci`。
+
+维护静态约束时可手动运行 `npm run test:static`；需要核对真实 DSH 兼容性时运行 `npm run test:dsh` 或 `npm run test:dsh-cli`。用法见 [测试说明](../scripts/tests/README.md)。
 
 检查通过后，流程读取自上一版本 tag 以来的全部 commit，以及 GitHub 关联到这些 commit、已经合入 `main` 的 PR。提交标题和正文都会保留，不要求 Conventional Commits。现有 `CHANGELOG.md` 内容保留，新条目放在前面。兼容历史 `v0.1` tag；若仓库没有版本 tag，则首次记录完整提交历史。
 

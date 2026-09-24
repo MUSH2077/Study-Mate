@@ -19,19 +19,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  guard:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Require the upstream main branch
-        env:
-          REPOSITORY: ${{ github.repository }}
-          REF: ${{ github.ref }}
-        run: |
-          test "$REPOSITORY" = 'Miaotofu01/Study-Mate'
-          test "$REF" = 'refs/heads/main'
-
   checks:
-    needs: guard
+    if: github.repository == 'Miaotofu01/Study-Mate' && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/ci.yml
 
   publish:
@@ -57,7 +46,7 @@ jobs:
           node-version: '24'
           registry-url: https://registry.npmjs.org/
           package-manager-cache: false
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
       - name: Install plugin build dependency

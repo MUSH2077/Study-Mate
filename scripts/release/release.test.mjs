@@ -181,7 +181,7 @@ test('plugin release build checks the prepared version and produces a SHA256 art
 
 test('release notes give both exact-version DSH installation and the OpenAI ZIP', () => {
   const body = withInstallationNotes('手工保留的版本说明', '0.2.0');
-  assert.match(body, /npx @yunmiao\/studymate@0\.2\.0/);
+  assert.match(body, /npx -y @yunmiao\/studymate@0\.2\.0 install/);
   assert.match(body, /Codex \/ ChatGPT Work/);
   assert.match(body, /releases\/download\/v0\.2\.0\/studymate-openai\.zip/);
   assert.equal(withInstallationNotes(body, '0.2.0'), body);

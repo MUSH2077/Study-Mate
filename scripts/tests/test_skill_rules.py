@@ -14,7 +14,7 @@ RULES = {
 'learning-system': [
  ('开场先定位工作区', 'studymate-config.yaml'),
  ('记 workspace 为 LEARN_WORKSPACE', 'LEARN_WORKSPACE'),
- ('缺配置提示 install.sh', 'install.sh'),
+ ('缺配置提示 npx 安装', 'npx -y @yunmiao/studymate@latest install'),
  ('按恢复视图读状态', '恢复视图'),
  ('首次使用问三件事', '想学什么'),
  ('新科目落地顺序：科目文件夹', 'assessments/'),

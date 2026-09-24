@@ -213,10 +213,11 @@ export function buildReleasePlugin(version, execute = command) {
 }
 
 export function withInstallationNotes(body, version) {
-  const installation = `${INSTALLATION_START}\n### 安装\n\n` +
-    `**DeepSeek Harness (DSH)**：\n\n\`\`\`sh\nnpx ${PACKAGE}@${version}\n\`\`\`\n\n` +
+  const installation = `${INSTALLATION_START}\n### 安装与更新\n\n` +
+    `**DeepSeek Harness (DSH)**：\n\n\`\`\`sh\nnpx -y ${PACKAGE}@${version} install\n\`\`\`\n\n` +
+    `首次安装与更新使用同一命令；更新沿用已有学习工作区。\n\n` +
     `**Codex / ChatGPT Work**：[下载同版本 OpenAI 插件 ZIP](https://github.com/${REPOSITORY}/releases/download/v${version}/${OPENAI_ASSET})。` +
-    `解压后按包内使用指南安装；学习数据保存在插件目录之外。\n${INSTALLATION_END}`;
+    `首次安装时导入完整 ZIP；更新时下载 ZIP，在浏览器中打开已有插件的链接并上传新版本，随后新建任务。详细步骤见包内使用指南，学习数据保存在插件目录之外。\n${INSTALLATION_END}`;
   const start = body.indexOf(INSTALLATION_START);
   const end = body.indexOf(INSTALLATION_END);
   if (start < 0 && end < 0) return `${body.trim()}\n\n${installation}\n`;

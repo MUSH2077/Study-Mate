@@ -206,8 +206,41 @@ test('missing Python is reported without stopping the host or creating installat
 
 test('unavailable Python reports the prerequisite on every supported platform', () => {
   for (const platform of ['darwin', 'linux', 'win32']) {
-    assert.throws(() => findPython(platform, () => ({ status: 1 })), /Python 3\.9\+ 和 PyYAML/);
+    assert.throws(() => findPython(platform, () => ({ status: 1 })), /没有找到可用的 Python 3\.9\+/);
   }
+});
+
+test('Python discovery prefers an interpreter that already has PyYAML', () => {
+  const result = findPython('linux', command => {
+    if (command === 'python3' || command === 'python') {
+      return { status: 0, stdout: JSON.stringify({ executable: `/opt/${command}`, version: [3, 14, 5] }) };
+    }
+    return { status: command === '/opt/python' ? 0 : 1 };
+  });
+  assert.deepEqual(result, { command: '/opt/python', prefix: ['-X', 'utf8'] });
+});
+
+test('missing PyYAML reports the detected Windows interpreter and its pip command', () => {
+  const executable = 'C:\\Python 3.14\\python.exe';
+  for (const launcher of ['python3', 'python', 'py']) {
+    const invocation = launcher === 'py' ? 'py -3' : launcher;
+    assert.throws(() => findPython('win32', command => command === launcher
+      ? { status: 0, stdout: JSON.stringify({ executable, version: [3, 14, 5] }) }
+      : { status: 1 }), error => {
+      assert.match(error.message, /已找到 Python 3\.14\.5/);
+      assert.match(error.message, /缺少 PyYAML/);
+      assert.ok(error.message.includes(executable));
+      assert.ok(error.message.includes(`${invocation} -m pip install PyYAML`));
+      assert.ok(error.message.includes(`${invocation} -m ensurepip --upgrade`));
+      return true;
+    });
+  }
+});
+
+test('an unsupported Python version is distinguished from a missing interpreter', () => {
+  assert.throws(() => findPython('linux', command => command === 'python3'
+    ? { status: 0, stdout: JSON.stringify({ executable: '/opt/python3', version: [3, 8, 20] }) }
+    : { status: 1 }), /检测到 Python 3\.8\.20，需要 Python 3\.9\+/);
 });
 
 test('an old host skips unsupported native loading without blocking startup', async () => {
@@ -224,6 +257,6 @@ test('an old host skips unsupported native loading without blocking startup', as
   assert.equal(warnings.length, 2);
   for (const warning of warnings) {
     assert.match(warning, /0\.1\.7-alpha\.1/);
-    assert.match(warning, /npx @yunmiao\/studymate install/);
+    assert.match(warning, /npx -y @yunmiao\/studymate@latest install/);
   }
 });

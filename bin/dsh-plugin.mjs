@@ -5,7 +5,7 @@ export const inject = ['agentPresets'];
 export async function apply(ctx) {
   const profile = ctx.get?.('profileContext');
   if (!profile || !ctx.agentPresets?.register) {
-    console.warn('StudyMate：当前 DSH 不支持原生插件接口（需要 0.1.7-alpha.1+）；已跳过原生加载。旧版请使用 npx @yunmiao/studymate install。');
+    console.warn('StudyMate：当前 DSH 不支持原生插件接口（需要 0.1.7-alpha.1+）；已跳过原生加载。旧版请使用 npx -y @yunmiao/studymate@latest install。');
     return;
   }
   try {

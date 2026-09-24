@@ -21,7 +21,7 @@ python3 scripts/preview_templates.py --open   # 生成并直接打开
 渲染，与真实课件是同一条产出路径）、以及两份空状态页。
 地址栏加 `?theme=dark` 看暗色。`.preview/` 已在 `.gitignore` 里。
 
-真实生成器是 **Task 13 的 `scripts/gen_home.py`**（读真数据、输出到学习工作区），预览脚本只负责看样式与交互。
+真实生成器是 **`scripts/gen_home.py`**（读真数据、输出到学习工作区），预览脚本只负责看样式与交互。
 
 ## 模板与生成器的契约
 
@@ -31,7 +31,7 @@ python3 scripts/preview_templates.py --open   # 生成并直接打开
 - 模板里**不放真实课程数据**：规范注释里的示例一律用字段名（`节点标题`、`NNNN`、`NN%`），避免被误当成数据
 - 占位符清单与每个占位符必须生成的结构：**两个主页模板**见 `docs/工程约束.md` 的「模板与生成器的占位符契约」，
   以及模板里占位符上方那段注释（那是权威规范，改模板要同步改）；**课件壳 `lesson.html`** 的 8 个
-  占位符见 `docs/课件内容格式.md` §5 与模板自己的注释——它不在 Global Constraints 那份清单里。
+  占位符见 `docs/课件内容格式.md` §5 与模板自己的注释。
 
 | 模板 | 占位符 | 权威在哪 |
 |------|--------|----------|
@@ -50,5 +50,5 @@ python3 scripts/preview_templates.py --open   # 生成并直接打开
   交出前跑一次 `python3 scripts/check_lesson.py <课件路径> --subject <科目目录> --node <节点id>`。
   学生常被总控用 `xdg-open` 直接打开课件，所以**主题开关必须长在课件自己身上**——它由渲染器按模板
   产出，要改就改模板或渲染器，别去手改 `<序号>-<节点id>.html`。
-- `MEMORY.md` / `subject.yaml` / `MISSION.md` / `RESOURCES.md` / `GLOSSARY.md`：科目与记忆模板（Task 3 的非前端部分，由对应会话产出）
+- `MEMORY.md` / `subject.yaml` / `MISSION.md` / `RESOURCES.md` / `GLOSSARY.md`：科目与记忆模板（由对应会话产出）
 - `assets/`：前端资源（Sayo UI、共享主题层与主题逻辑、课件层组件、公式排版用的 KaTeX）——**摆放位置与各页面引用路径见 `assets/README.md`**

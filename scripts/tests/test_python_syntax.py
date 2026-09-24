@@ -68,7 +68,7 @@ def main():
     if sys.version_info < (3, 12):
         print(f'提示：本机 Python {sys.version_info.major}.{sys.version_info.minor} 不会为非法转义发 '
               'SyntaxWarning，所以这一类问题在本地**看不见**（3.6 起只是被弃用、默认不显示）——'
-              'CI 的 3.13 上这道才真正生效；想提前在本机看到，用 '
+              '请用 Python 3.12+ 运行此项检查，例如 '
               '`uv run --python 3.13 python scripts/tests/test_python_syntax.py`。')
 
     print(f'\n{total - failures}/{total} 通过（扫了 {scanned} 个文件）')

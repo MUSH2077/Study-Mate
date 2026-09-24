@@ -240,7 +240,7 @@ def install(args):
         raise ValueError(f'{patch} 已手动声明 learning 预设，请先处理该声明；未修改配置')
     if native and BEGIN in original:
         raise ValueError('学习模式仍由 npx 管理；如需切换，请运行 '
-                         f'npx @yunmiao/studymate@latest install --mode native --profile {profile} 后重启 DSH')
+                         f'npx -y @yunmiao/studymate@latest install --mode native --profile {profile} 后重启 DSH')
     for entries, location in [(data, patch), (home_data, home_patch)]:
         check_native_overrides(entries, location, standalone=not bundle,
                                selected=selected, global_patch=location == home_patch)

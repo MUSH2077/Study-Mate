@@ -11,8 +11,12 @@ const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const metadata = JSON.parse(fs.readFileSync(path.join(source, 'package.json'), 'utf8'));
 const help = `StudyMate ${metadata.version}
 
+在 DSH 中安装或更新 StudyMate：npx -y @yunmiao/studymate@latest install
+Codex / ChatGPT Work：下载并导入最新插件 ZIP：
+https://github.com/Miaotofu01/Study-Mate/releases/latest/download/studymate-openai.zip
+
 用法：studymate [install] [--workspace <目录>] [--profile <名称>] [--mode standalone|native]
-      studymate build-plugin [--output <目录>]
+      studymate build-plugin [--output <目录>]（开发者构建）
       studymate --help | --version
 
 将学习模式和引擎安装到 DSH_HOME（默认 ~/.dsh）。
@@ -22,7 +26,8 @@ DSH 0.1.7+ 默认注册到 web profile；其他 profile 用 --profile 指定。
 需要 Node.js ^22.19.0 或 >=24、dsh >=0.1.5-rc.2、Python 3.9+ 和 PyYAML。
 安装器不会安装或升级 dsh，也不会重启正在运行的会话。
 
-build-plugin 导出 Codex / ChatGPT Work 技能插件目录及 ZIP（默认 ./dist）。
+更新使用相同的 install 命令，沿用已有学习工作区。
+build-plugin 供开发者导出 Codex / ChatGPT Work 技能插件目录及 ZIP（默认 ./dist）。
 导出只需要 Node.js、Python 3.9+ 和 PyYAML，不需要 DSH，也不会更改客户端配置。`;
 
 function run(command, args, extra = {}) {
@@ -56,7 +61,8 @@ export function supportsDsh(value) {
 export function findPython(platform = process.platform, execute = run) {
   const candidates = [['python3', []], ['python', []]];
   if (platform === 'win32') candidates.push(['py', ['-3']]);
-  const probe = 'import sys, json; assert sys.version_info >= (3,9); import yaml; print(json.dumps(sys.executable))';
+  const probe = 'import sys, json; print(json.dumps(dict(executable=sys.executable, version=list(sys.version_info[:3]))))';
+  let missingYaml, outdated;
   for (const [command, prefix] of candidates) {
     let result = execute(command, [...prefix, '-X', 'utf8', '-c', probe]);
     if (platform === 'win32' && result.error) {
@@ -68,15 +74,33 @@ export function findPython(platform = process.platform, execute = run) {
     }
     if (result.status !== 0) continue;
     try {
-      const executable = JSON.parse(result.stdout);
-      if (typeof executable === 'string' && executable) {
-        return { command: executable, prefix: ['-X', 'utf8'] };
+      const { executable, version } = JSON.parse(result.stdout);
+      if (typeof executable !== 'string' || !executable || !Array.isArray(version) ||
+          version.length < 2 || !version.every(Number.isInteger)) continue;
+      if (version[0] < 3 || (version[0] === 3 && version[1] < 9)) {
+        outdated ??= version.join('.');
+        continue;
       }
+      const python = { command: executable, prefix: ['-X', 'utf8'] };
+      if (execute(executable, [...python.prefix, '-c', 'import yaml']).status === 0) return python;
+      missingYaml ??= { executable, version: version.join('.'), launcher: [command, ...prefix].join(' ') };
     } catch { /* A launcher that did not produce the probe result is not usable. */ }
   }
   const checked = candidates.map(([command, prefix]) => [command, ...prefix].join(' ')).join('、');
-  const pip = platform === 'win32' ? 'py -3' : 'python3';
-  throw new Error(`没有找到可用的 Python 3.9+ 和 PyYAML（已检查 ${checked}）。请安装 Python，并用对应解释器运行 ${pip} -m pip install PyYAML。`);
+  if (missingYaml) {
+    const terminal = platform === 'win32' ? '命令提示符（CMD）或 PowerShell' : '系统终端';
+    throw new Error(`已找到 Python ${missingYaml.version}：${missingYaml.executable}\n` +
+      `但这个 Python 缺少 PyYAML 或无法加载它。PyYAML 用于读取 StudyMate 的 YAML 配置，需要单独安装。\n\n` +
+      `1. 如果当前看到 Python 的 >>> 提示符，先输入 exit() 返回终端。\n` +
+      `2. 在${terminal}中复制执行下面的命令（使用本次检测到的 Python）：\n` +
+      `   ${missingYaml.launcher} -m pip install PyYAML\n` +
+      `3. 安装完成后，重新运行刚才的 StudyMate 命令，保留原有参数。\n\n` +
+      `如果提示 No module named pip，先执行：\n` +
+      `   ${missingYaml.launcher} -m ensurepip --upgrade\n` +
+      `然后重新执行上面的 PyYAML 安装命令。`);
+  }
+  if (outdated) throw new Error(`检测到 Python ${outdated}，需要 Python 3.9+（已检查 ${checked}）。请升级 Python 后重试。`);
+  throw new Error(`没有找到可用的 Python 3.9+（已检查 ${checked}）。请安装 Python 3.9+，并确认能从终端运行。`);
 }
 
 function checkDependencies() {
@@ -174,7 +198,7 @@ export function installPayload({ workspaceArg, profile = 'web', python, version,
   if (native && (installedMode === 'standalone' ||
       installedMode !== 'native' && fs.existsSync(preset))) {
     throw new Error('学习模式仍由安装器管理；如需切换，请运行 ' +
-      `npx @yunmiao/studymate@latest install --mode native --profile ${profile} 后重启 DSH。`);
+      `npx -y @yunmiao/studymate@latest install --mode native --profile ${profile} 后重启 DSH。`);
   }
   const managedDirectories = native ? [engine] : [engine, preset];
   for (const parent of managedDirectories.map(directory => path.dirname(directory))) {

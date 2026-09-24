@@ -232,7 +232,7 @@ if (!runtime) {
     await f.web(0);
     if (!expected) {
       assert.match(redact(first.output), /0\.1\.7-alpha\.1\+/);
-      assert.match(redact(updated.output), /npx @yunmiao\/studymate(?:@latest)? install/);
+      assert.match(redact(updated.output), /npx -y @yunmiao\/studymate@latest install/);
     }
   });
   test('npx remains the owner after native add; explicit migration enables native updates', { timeout: 180000 }, async t => {

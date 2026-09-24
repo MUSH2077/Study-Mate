@@ -16,7 +16,7 @@ argument-hint: "你想学什么？或继续上次的科目"
 
 ## 会话开场
 
-0. **定位工作区与引擎**：读 `~/.dsh/studymate-config.yaml` 拿 `workspace`（记为 `LEARN_WORKSPACE`）与 `root`（记为 `<root>`）；缺配置或缺 `root` 就提示"请先运行 install.sh"并停止
+0. **定位工作区与引擎**：读 `~/.dsh/studymate-config.yaml` 拿 `workspace`（记为 `LEARN_WORKSPACE`）与 `root`（记为 `<root>`）；缺配置或缺 `root` 就提示"请先运行 npx -y @yunmiao/studymate@latest install"并停止
 1. **加载 `record-keeping` 并读状态**（按它的"恢复视图"；写入规则与边界全在那份里）
 2. **没有科目**（首次使用）：问三件事——想学什么、当前基础、讲法偏好（一次一件）；写进「共享记忆」，然后走下面的盘问
 3. **已有科目**：把科目清单摆给学生选项，或让他报新科目名

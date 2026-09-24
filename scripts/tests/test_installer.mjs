@@ -29,7 +29,7 @@ function fixture(t) {
       process.platform === 'win32' ? `@echo ${value}\r\n` : `#!/bin/sh\nprintf '%s\\n' '${value}'\n`, { mode: 0o755 });
   }
   function install(...args) {
-    return spawnSync(process.execPath, [cli, 'install', ...args], { env, encoding: 'utf8', timeout: 30000 });
+    return spawnSync(process.execPath, [cli, 'install', ...args], { cwd: dir, env, encoding: 'utf8', timeout: 30000 });
   }
   function yaml(file) {
     const result = spawnSync(python.command, [...python.prefix, '-c',
@@ -73,17 +73,34 @@ test('install, reinstall and downgrade preserve workspace and unrelated profile 
   const config = f.yaml(f.config);
   config.custom = 'keep';
   fs.writeFileSync(f.config, JSON.stringify(config));
+  const notes = path.join(workspace, '.learning', 'subjects', 'notes.md');
+  fs.writeFileSync(notes, 'my learning notes');
   result = f.install();
   assert.equal(result.status, 0, result.stderr);
   assert.equal(fs.readFileSync(f.patch, 'utf8'), patch);
   assert.equal(f.yaml(f.config).workspace, fs.realpathSync(workspace));
   assert.equal(f.yaml(f.config).custom, 'keep');
+  assert.equal(fs.readFileSync(notes, 'utf8'), 'my learning notes');
   for (const [version, workflow] of [['0.1.6-alpha.1', 'ptc'], ['0.1.5-rc.2', 'worker-thread']]) {
     f.version(version);
     result = f.install();
     assert.equal(result.status, 0, result.stderr);
     assert.equal(fs.readFileSync(f.patch, 'utf8').trim(), original.trim());
     assert.ok(fs.readFileSync(f.preset, 'utf8').includes(`@deepseek-ai/dsh-workflow-${workflow}`));
+  }
+});
+
+test('workspace paths expand home and resolve relative to the invocation directory', t => {
+  const f = fixture(t);
+  for (const [workspace, expected] of [
+    ['~/学习笔记', path.join(f.home, '学习笔记')],
+    ["relative [1] O'Brien # notes", path.join(f.dir, "relative [1] O'Brien # notes")],
+  ]) {
+    const result = f.install('--workspace', workspace);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(f.yaml(f.config).workspace, fs.realpathSync(expected));
+    assert.equal(f.install().status, 0);
+    assert.equal(f.yaml(f.config).workspace, fs.realpathSync(expected));
   }
 });
 
@@ -99,6 +116,7 @@ test('invalid profile patch fails before replacing a working install', t => {
   assert.equal(fs.readFileSync(f.preset, 'utf8'), before);
   assert.equal(fs.readFileSync(f.config, 'utf8'), config);
   assert.equal(fs.readFileSync(f.patch, 'utf8'), 'not: [valid');
+  assert.equal(fs.readdirSync(f.env.DSH_HOME).some(name => name.startsWith('.studymate-install-')), false);
 });
 
 test('profile option registers only the selected profile and rejects traversal', t => {

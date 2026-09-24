@@ -5,7 +5,6 @@
 <p align="center"><b>你的AI学习搭档：定计划、讲知识、做项目，学透一门科目</b></p>
 
 <p align="center">
-<img src="https://img.shields.io/badge/version-v0.1-1c5a40" alt="版本 v0.1">
 <img src="https://img.shields.io/badge/DSH-%E5%AD%A6%E4%B9%A0%E6%A8%A1%E5%BC%8F%E9%A2%84%E8%AE%BE-1c5a40" alt="DSH 学习模式预设">
 <img src="https://img.shields.io/badge/python-3.9%2B-3776ab" alt="Python">
 <img src="https://img.shields.io/github/license/Miaotofu01/Study-Mate" alt="MIT License">
@@ -27,74 +26,28 @@
 
 ## 快速开始
 
-下面是 DSH 的安装方式。Codex 和 ChatGPT Work 用户请看 [OpenAI 插件快速开始](#codex-和-chatgpt-work)。
+### DeepSeek Harness
 
-**依赖**：DSH、Python 3.9+、pyyaml、bash、coreutils、sed（Windows 只要 DSH + Python 3.9+ + pyyaml）
-
-**通过 npm 安装（推荐）**
-
-更新也可使用以下命令，原生命令安装见 [安装说明](docs/安装.md)。
+**DSH 依赖**：DSH 0.1.5-rc.2+、Node.js 22 系列或 24+、Python 3.9+、PyYAML。
 
 ```bash
-npx @yunmiao/studymate@latest install
+npx -y @yunmiao/studymate@latest install
 dsh web
 ```
 
-**macOS / Linux**
-
-```bash
-# ① 克隆本项目
-git clone https://github.com/Miaotofu01/Study-Mate.git StudyMate && cd StudyMate
-# ② 装「学习模式」预设 + 建学习工作区
-./install.sh
-# ③ 启动 DSH，在任意目录新建会话并选「学习模式」预设
-dsh web
-```
-
-**Windows（PowerShell）**
-
-```powershell
-git clone https://github.com/Miaotofu01/Study-Mate.git StudyMate; cd StudyMate
-powershell -ExecutionPolicy Bypass -File .\install.ps1
-dsh web
-```
-
-安装脚本成功运行的结果：
-
-```text
-① 预设 → /home/you/.dsh/.agent-presets/learning（skill 目录：/path/to/StudyMate/.dsh/skills）
-② 学习工作区 → /path/to/StudyMate/workspace（配置在 /home/you/.dsh/studymate-config.yaml）
-完成（StudyMate v0.1）。现在可在任意目录开会话，选'学习模式'预设开始学习。
-```
+**更新**：再次运行上述 `npx` 命令，然后重启 DSH。
 
 - **第一次学习**：新建会话时选「学习模式」，说一句「我想学 [某个科目]」。
-- **学习工作区默认在 StudyMate/workspace，所有课件与记忆均存放在工作区**
+- **学习工作区默认在 `~/StudyMate`，所有课件与记忆均存放在工作区**；已有配置会沿用。
 - 第一次生成课程后，课程主页在工作区目录 `<workspace>/index.html`，是未来所有课件的入口
 
-<details>
-<summary><b><code>install.sh</code> / <code>install.ps1</code> 具体做了什么 / 怎么换工作区位置</b></summary>
+指定工作区、依赖安装和换机器续学见 [安装说明](docs/安装.md)。
 
-两个脚本做同样两件事：把 `preset/learning/` 装到 `~/.dsh/.agent-presets/learning/`，并让预设里的技能目录固定指向本项目的 `.dsh/skills/`；建学习工作区（默认本项目的 `workspace/`）并把它的路径写进 `~/.dsh/studymate-config.yaml`。
+### Codex 和 ChatGPT Work
 
-换工作区位置：改 `~/.dsh/studymate-config.yaml` 里的 `workspace:`，或跑一次 `LEARN_WORKSPACE=<新路径> ./install.sh`（Windows：`$env:LEARN_WORKSPACE='D:\study'; .\install.ps1`）；项目被移动过也要重跑一次（配置里的 `root` 会按当前位置重写）。学习数据都在工作区里，换机器把整个项目（含 `workspace/`）拷走再跑一次安装脚本。
+从 [最新 Release](https://github.com/Miaotofu01/Study-Mate/releases/latest) 下载 **studymate-openai.zip**，通过 Codex/ChatGPT 提供的插件导入入口导入（详见 [导入说明](docs/Codex与ChatGPT.md)）。
 
-</details>
-
-## Codex 和 ChatGPT Work
-
-从 [GitHub Releases](https://github.com/Miaotofu01/Study-Mate/releases) 下载支持 OpenAI 的版本所附 `studymate-openai.zip`，按 [安装说明](docs/Codex与ChatGPT.md) 安装。ZIP 内含 11 个技能、课件引擎和模板。
-
-DSH 用户沿用上面的 npm 安装方式；Codex / ChatGPT Work 用户下载 ZIP。两种产物共用代码和版本，每次 Release 一起发布。
-
-开发者在源码仓库中也可自行构建：
-
-```bash
-npm run build:plugin
-```
-
-生成 `dist/studymate/`（完整插件目录）和 `dist/studymate-openai.zip`（分发包）。构建命令只生成文件；正式分发由仓库的 [Release 流程](docs/releasing.md) 完成。
-
-安装后，在新任务中选择 StudyMate 的 `learning-system` 技能，说「我想学线性代数，学习工作区用 `D:/StudyMate-workspace`」。完整的课件生成与校验需要 Python 3.9+、PyYAML 和 jsonschema；工作区应放在插件目录之外。
+**更新时下载最新版 ZIP，找到已有的插件链接，在浏览器中打开，选择上传新版本**
 
 ## 它是什么
 
@@ -146,14 +99,14 @@ python3 scripts/check_curriculum.py examples/.learning/subjects/computer-network
 python3 scripts/check_lesson.py examples/.learning/subjects/linear-algebra/lessons/0001-vector.space.html --subject examples/.learning/subjects/linear-algebra --node vector.space
 python3 scripts/check_pool.py <你的科目目录>    # 图片池：索引 pool.md 与 assets/img/pool/ 对不对得上
 python3 scripts/check_skill.py .dsh/skills/*    # 技能 frontmatter（改过技能就跑一次）
-bash scripts/tests/run_tests.sh                # 回归测试：检查/题目属性/命名指针/提示词规则/DOM（改引擎就跑一次）
+npm test                                     # 与 Actions 共用的功能回归
 
 # 换成你自己的科目：--subject 给科目目录，--node 给该课件对应的节点 id；大纲校验可一次传多个 curriculum.yaml
 ```
 
 `check_lesson.py` 只阻断工程与结构缺项（文件名与编号、课件归属、共享层引用、**本地引用可达**、题目结构与属性写法、题目位置标记残留、主题开关；`kind` 为 `实操/实验` 时还要求 lab 与产物齐全），内容风格类问题只提示；其中「题目位置标记残留」只可能来自手写时代的老课件——渲染产物里不会有标记。`check_pool.py` 校验图片池：索引表头七列、文件名合规、来源 URL 与许可非空、单张 ≤500 KB——还没建过图片池的科目没有 `assets/img/pool.md`，它会报一行「索引不存在」并退出 1，那是图片库还没建，不是命令坏了。退出码：`check_lesson.py` / `check_curriculum.py` / `check_pool.py` 有阻断项即 1，`gen_home.py` 占位符缺失或产物断链即 1。
 
-`scripts/tests/run_tests.sh` 不需要浏览器（`--browser` 才加真实 Chrome 的高亮那套）；测试自己造临时科目，不碰 `workspace/`。改了检查、`templates/assets/` 或 `.dsh/skills/` 之后跑一次，见 `scripts/tests/README.md`。
+`npm test` 不需要真实 DSH 或浏览器；测试自己造临时科目，不碰学习工作区。提示词与模板静态约束、真实 DSH 和浏览器检查按需单独运行，见 [测试说明](scripts/tests/README.md)。
 
 </details>
 
@@ -161,7 +114,7 @@ bash scripts/tests/run_tests.sh                # 回归测试：检查/题目属
 
 ```text
 StudyMate/                     ← 本仓库：系统源码（引擎），学习时只读
-├── install.sh / install.ps1   # 装预设 + 建学习工作区，幂等（macOS/Linux 与 Windows 各一份）
+├── bin/studymate.mjs          # npx 安装入口 + OpenAI 插件构建入口
 ├── .dsh/skills/               # 11 个技能：总控 learning-system + 5 个角色 + 5 个规范
 │   ├── learning-system/       #   总控（主教练）：开场、盘问、调度、档案
 │   ├── resource-scout/        #   角色：收集资料（权威教材与官方文档 → 资源清单）
@@ -174,17 +127,17 @@ StudyMate/                     ← 本仓库：系统源码（引擎），学习
 │   ├── evidence-check/        #   规范：完成证据核验
 │   ├── local-qa/              #   规范：局部提问怎么答
 │   └── record-keeping/        #   规范：学习状态读写规则
-├── preset/learning/           # 「学习模式」预设源（安装脚本装到 ~/.dsh/）
+├── preset/learning/           # 「学习模式」预设源（npx 安装到 ~/.dsh/）
 ├── schemas/                   # 5 份数据结构：大纲 / 进度 / 评估 / 会话摘要 / 科目
 ├── templates/                 # 页面骨架（主页、科目页、课件壳）与前端资源 assets/
 ├── scripts/                   # 主页生成 + 课件渲染器 + 四道校验检查（用法见上）+ tests/ 回归测试
 ├── dist/studymate/            # build:plugin 生成的 OpenAI 插件，含适配后的 11 个技能（不入库）
 ├── examples/                  # 示例学习工作区：线性代数 + 计算机网络，页面已生成，clone 即可点开
 ├── docs/                      # 使用说明、课件内容格式、设计方案、工程约束、文件归属、docs/images/ 截图
-└── workspace/                 # 你的学习数据（默认位置，可配置；也被 .gitignore 忽略）
+└── workspace/                 # 可选的本地学习工作区（已被 .gitignore 忽略）
 ```
 
-仓库之外还有一处安装落点：`~/.dsh/.agent-presets/learning/`（预设）与 `~/.dsh/studymate-config.yaml`（工作区定位），都由安装脚本写入。
+DSH 安装到 `~/.dsh/studymate/engine/`，预设与工作区配置也由安装器管理。学习数据默认位于独立的 `~/StudyMate`，无需保留源码仓库；详见 [安装说明](docs/安装.md)。
 
 学习工作区里面长什么样（科目文件夹、课件、lab、档案、课型与题型、模板与生成器的契约），见 [使用说明 §六](docs/使用说明.md#六学习数据存在哪)。
 
@@ -197,9 +150,11 @@ StudyMate/                     ← 本仓库：系统源码（引擎），学习
 </details>
 
 <details>
-<summary><b>报 <code>ModuleNotFoundError: No module named 'yaml'</code></b></summary>
+<summary><b>已装 Python，但提示缺少 PyYAML</b></summary>
 
-`pip install pyyaml` 即可：主页生成与课件检查都要它。注意依赖缺了检查会**变松**——没有 `pyyaml` 时 `check_lesson.py` 跳过「这课该不该有 lab」的判定（只 `WARN`）；没有 `jsonschema` 时 `check_curriculum.py` 跳过 schema 校验，只报重复 id、悬空引用与环。
+Python 不自带 PyYAML。请在系统终端复制安装器给出的依赖安装命令，使用它检测到的同一个解释器，完成后重试原 `npx` 命令并保留参数。看到 `>>>` 或提示缺少 `pip` 时，按 [依赖安装说明](docs/安装.md#dsh) 处理。
+
+完整课件校验还需要 `jsonschema`；缺少它时，大纲检查会跳过 schema 校验。
 </details>
 
 更多问题（手改 YAML 的坑、大纲改节点后指针为什么会错、能不能离线）见 [使用说明 §八 常见问题](docs/使用说明.md#八常见问题)。
@@ -212,15 +167,7 @@ StudyMate/                     ← 本仓库：系统源码（引擎），学习
 
 ### 提改动前先跑这几条
 
-四条校验器各管一段（最后一行是回归套件），都是确定性的、带行号报错：
-
-```bash
-python3 scripts/check_skill.py .dsh/skills/*                                   # 提示词与技能：契约、单一 owner、措辞闸门
-python3 scripts/check_curriculum.py <学习工作区>/.learning/subjects/<slug>/curriculum.yaml  # 大纲：schema、引用完整、无环、实验课要写 prerequisites
-python3 scripts/check_lesson.py <课件.html> --subject <科目目录> --node <节点 id>   # 课件：版式、配图、题目、命名与上下节课指针
-python3 scripts/check_pool.py <科目目录>                                        # 图片库：索引七列、图片存在、命名合规、单张 ≤500 KB
-bash scripts/tests/run_tests.sh                                               # 回归：11 套快测（--browser 再加 2 套，共 13 套）
-```
+运行 `npm test`，再按修改范围补充 [配置与维护](#配置与维护) 中的校验。其他测试入口见 [测试说明](scripts/tests/README.md)。
 
 ### License
 

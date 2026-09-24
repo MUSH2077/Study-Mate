@@ -79,7 +79,7 @@
 # `tool-skill` gives them the catalog and loader; the merged catalog also
 # carries whatever the deployment registered globally (repository plugins).
 # 技能目录指向引擎项目：DSH 只扫一层，11 个技能都在 <root>/.dsh/skills/<名字>/。
-# 占位符由 install.sh 替换成引擎的绝对路径。
+# 占位符由 npx 安装器替换成引擎的绝对路径。
 # includeDefaultRoots: false = 不再扫 ~/.dsh/skills 等全局目录：学习会话的技能目录里
 # 只有 StudyMate 自己的 11 个，不背机器上已装的其他技能（两边互不干扰）。
 - id: skill-filesystem
