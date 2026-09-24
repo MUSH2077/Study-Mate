@@ -31,8 +31,8 @@ function parseMetadata(yaml) {
   return result;
 }
 
-test('all eleven skills expose valid quoted UI fields and no tool dependencies', () => {
-  assert.equal(names.length, 11);
+test('all twelve skills expose valid quoted UI fields and no tool dependencies', () => {
+  assert.equal(names.length, 12);
   const displays = new Set();
   for (const name of names) {
     const metadata = parseMetadata(getOpenAiSkillUi(name));
