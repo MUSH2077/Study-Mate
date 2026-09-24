@@ -77,8 +77,12 @@ test('exported ZIP contains complete portable skills and renders without DSH or 
   assert.ok(fs.existsSync(path.join(workspace, '.learning/assets/learn-theme.css')));
   assert.equal(fs.existsSync(env.DSH_HOME), false);
   // Render actual lesson content with only resources from the extracted package.
-  fs.cpSync(path.join(root, 'examples/.learning/subjects/linear-algebra'), path.join(workspace, '.learning/subjects/linear-algebra'), { recursive: true });
   const subject = path.join(workspace, '.learning/subjects/linear-algebra');
+  // Match the installer's workaround for Node 22.19's native Windows Unicode copy.
+  fs.cpSync(path.join(root, 'examples/.learning/subjects/linear-algebra'), subject, {
+    recursive: true, filter: () => true,
+  });
+  assert.ok(fs.existsSync(path.join(subject, 'curriculum.yaml')), 'lesson fixture was copied');
   runPython([path.join(plugin, 'scripts/render_lesson.py'), subject, 'vector.space'], env);
   runPython([path.join(plugin, 'scripts/check_lesson.py'), path.join(subject, 'lessons/0001-vector.space.html'), '--subject', subject, '--node', 'vector.space'], env);
 });
