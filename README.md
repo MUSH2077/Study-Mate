@@ -27,6 +27,8 @@
 
 ## 快速开始
 
+下面是 DSH 的安装方式。Codex 和 ChatGPT Work 用户请看 [OpenAI 插件快速开始](#codex-和-chatgpt-work)。
+
 **依赖**：DSH、Python 3.9+、pyyaml、bash、coreutils、sed（Windows 只要 DSH + Python 3.9+ + pyyaml）
 
 **通过 npm 安装（推荐）**
@@ -78,9 +80,25 @@ dsh web
 
 </details>
 
+## Codex 和 ChatGPT Work
+
+从 [GitHub Releases](https://github.com/Miaotofu01/Study-Mate/releases) 下载支持 OpenAI 的版本所附 `studymate-openai.zip`，按 [安装说明](docs/Codex与ChatGPT.md) 安装。ZIP 内含 11 个技能、课件引擎和模板。
+
+DSH 用户沿用上面的 npm 安装方式；Codex / ChatGPT Work 用户下载 ZIP。两种产物共用代码和版本，每次 Release 一起发布。
+
+开发者在源码仓库中也可自行构建：
+
+```bash
+npm run build:plugin
+```
+
+生成 `dist/studymate/`（完整插件目录）和 `dist/studymate-openai.zip`（分发包）。构建命令只生成文件；正式分发由仓库的 [Release 流程](docs/releasing.md) 完成。
+
+安装后，在新任务中选择 StudyMate 的 `learning-system` 技能，说「我想学线性代数，学习工作区用 `D:/StudyMate-workspace`」。完整的课件生成与校验需要 Python 3.9+、PyYAML 和 jsonschema；工作区应放在插件目录之外。
+
 ## 它是什么
 
-StudyMate 是 DSH（DeepSeek Harness）的 **「学习模式」预设 + 一套 SKILL**。它背后按需调度收集资料、采图、课程设计、讲解、练习评估五个子角色，产物是一整套 HTML 课件。专攻**数学/计算机**相关科目的学习。
+StudyMate 是一套**数学/计算机学习工作流、SKILL 与 HTML 课件引擎**，支持 DSH（DeepSeek Harness）的「学习模式」预设，也可打包为 Codex 和 ChatGPT Work 插件。它按需组织收集资料、采图、课程设计、讲解、练习评估五个角色；宿主支持时可委派给子代理，否则依次完成各角色工作。
 
 - **课程组成：讲解|练习|项目实操**：每门课一份大纲——知识点按前置依赖排成路线图，每个知识点标课的类型「概念课 | 实操课 | 实验课」（大纲里写 `概念`／`实操`／`实验`）。学习进度落在文件里，每次新对话可继承已有进度。
 - **跨科目共享记忆**：记住你的现有水平、哪种讲法有效、常见卡点，下一门课不用重新自我介绍。
@@ -160,6 +178,7 @@ StudyMate/                     ← 本仓库：系统源码（引擎），学习
 ├── schemas/                   # 5 份数据结构：大纲 / 进度 / 评估 / 会话摘要 / 科目
 ├── templates/                 # 页面骨架（主页、科目页、课件壳）与前端资源 assets/
 ├── scripts/                   # 主页生成 + 课件渲染器 + 四道校验检查（用法见上）+ tests/ 回归测试
+├── dist/studymate/            # build:plugin 生成的 OpenAI 插件，含适配后的 11 个技能（不入库）
 ├── examples/                  # 示例学习工作区：线性代数 + 计算机网络，页面已生成，clone 即可点开
 ├── docs/                      # 使用说明、课件内容格式、设计方案、工程约束、文件归属、docs/images/ 截图
 └── workspace/                 # 你的学习数据（默认位置，可配置；也被 .gitignore 忽略）
@@ -189,7 +208,7 @@ StudyMate/                     ← 本仓库：系统源码（引擎），学习
 
 - **项目交流群**(QQ)：161914370
 - **变更日志**：[CHANGELOG.md](CHANGELOG.md)
-- **文档**：[使用说明](docs/使用说明.md)（日常怎么用、课型与题型、检查与档案规则）· [课件内容格式](docs/课件内容格式.md)（内容文件与题目位置的语法）· [文件归属](docs/文件归属.md)（代称 ↔ 路径 ↔ 维护者）· [设计方案](docs/设计方案.md)（产品视角）· [工程约束](docs/工程约束.md)（目录约定、占位符契约、脚本一览、技术选型）· [模板说明](templates/README.md) · [前端资源契约](templates/assets/README.md)
+- **文档**：[使用说明](docs/使用说明.md)（日常怎么用、课型与题型、检查与档案规则）· [Codex 与 ChatGPT](docs/Codex与ChatGPT.md)（OpenAI 插件构建、安装与工作区）· [课件内容格式](docs/课件内容格式.md)（内容文件与题目位置的语法）· [文件归属](docs/文件归属.md)（代称 ↔ 路径 ↔ 维护者）· [设计方案](docs/设计方案.md)（产品视角）· [工程约束](docs/工程约束.md)（目录约定、占位符契约、脚本一览、技术选型）· [模板说明](templates/README.md) · [前端资源契约](templates/assets/README.md)
 
 ### 提改动前先跑这几条
 

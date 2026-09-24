@@ -1,6 +1,15 @@
-# 发布 npm 包
+# 发布 npm 包和 OpenAI 插件
 
 发布入口是 GitHub Actions 的 **Release**，对应 `.github/workflows/release.yml`。只接受 `Miaotofu01/Study-Mate` 的 `main` 分支，手动选择 `patch`、`minor` 或 `major`。流程不会合并 Pull Request。
+
+一份代码、一个版本、两种分发产物：
+
+| 使用方 | 获取方式 | 发布位置 |
+| --- | --- | --- |
+| DSH | `npx @yunmiao/studymate@latest install` | 原有 npm 包 |
+| Codex / ChatGPT Work | 下载 `studymate-openai.zip` 后安装 | 同版本 GitHub Release 附件 |
+
+无需另外申请 npm 包名。ZIP 内的插件 manifest 版本在构建时跟随 `package.json`；不要手动提前递增版本或添加本次正式发布的 changelog，Release 流程会生成它们。
 
 ## 首次配置
 
@@ -22,19 +31,19 @@ GitHub 发布 job 引用 `npm` environment，不要求设置审批人。仓库�
 
 1. 将希望发布的修改按正常方式合入 `main`。
 2. 打开 **Actions → Release → Run workflow**，分支选择 `main`，选择版本增量。例如 `0.1.1` 选择 `patch` 会得到 `0.1.2`。
-3. 等待检查和发布完成。任务摘要会给出 npm 包和 GitHub Release 链接。
+3. 等待检查和发布完成。任务摘要会给出 npm 包、GitHub Release 和 OpenAI 插件 ZIP 链接。新增 Codex / ChatGPT 支持这一版可选择 `minor`，从 `0.1.5` 发布为 `0.2.0`。
 
-发布前会在 Ubuntu、macOS、Windows 上分别运行 Node 22.19 / Python 3.9 和 Node 24 / Python 3.13 两组检查：`npm run test:installer`、所有 `scripts/tests/test_*.py`、两组 DOM 测试及发布脚本测试。当前包无 npm 依赖和 lockfile，因此不运行 `npm ci`；如果将来增加依赖，需要同时调整检查流程。无需浏览器或模型服务。
+发布前会在 Ubuntu、macOS、Windows 上分别运行 Node 22.19 / Python 3.9 和 Node 24 / Python 3.13 两组检查：`npm run test:installer`、`npm run test:openai`、所有 `scripts/tests/test_*.py`、两组 DOM 测试及发布脚本测试。当前包无 npm 依赖和 lockfile，因此不运行 `npm ci`；如果将来增加依赖，需要同时调整检查流程。无需浏览器或模型服务。
 
 检查通过后，流程读取自上一版本 tag 以来的全部 commit，以及 GitHub 关联到这些 commit、已经合入 `main` 的 PR。提交标题和正文都会保留，不要求 Conventional Commits。现有 `CHANGELOG.md` 内容保留，新条目放在前面。兼容历史 `v0.1` tag；若仓库没有版本 tag，则首次记录完整提交历史。
 
-随后更新 `package.json`（若有 npm lockfile，也同步根版本），原子推送版本 commit 和 `vX.Y.Z` tag。若 `main` 在检查期间发生变化，发布会停止，需要从最新 `main` 重新触发。包内容经过清单与完整性检查后，使用 `npm pack` 的同一个 tarball 发布到官方 npm registry，附带 provenance；确认 registry 的 SHA-512 完整性相同后创建 GitHub Release。
+随后更新 `package.json`（若有 npm lockfile，也同步根版本），原子推送版本 commit 和 `vX.Y.Z` tag。若 `main` 在检查期间发生变化，发布会停止，需要从最新 `main` 重新触发。正式发包前构建并核对同版本 OpenAI ZIP。包内容经过清单与完整性检查后，使用 `npm pack` 的同一个 tarball 发布到官方 npm registry，附带 provenance；确认 registry 的 SHA-512 完整性相同后创建 GitHub Release，并上传 `studymate-openai.zip`。
 
 ## 失败后重试
 
 重跑旧任务仍使用当时的 commit，不会包含后来推送的修复。如果检查失败后已修复代码，且本次版本 tag 尚未创建，请在 **Actions → Release → Run workflow** 从最新 `main` 新建一次发布。
 
-如果只是网络等临时故障，代码没有变化，或本次版本 commit/tag 已经推送，在原任务点击 **Re-run failed jobs**。版本 tag 保存了源 commit 和发布信息，流程会继续这个版本；如果 npm 已经发布相同 tarball，则跳过发布并补齐 Release。若同一 npm 版本内容不同、tag 来源不同、registry 状态不明，流程会失败并保留现场，不覆盖已有内容。
+如果只是网络等临时故障，代码没有变化，或本次版本 commit/tag 已经推送，在原任务点击 **Re-run failed jobs**。版本 tag 保存了源 commit 和发布信息，流程会继续这个版本；如果 npm 已经发布相同 tarball，则跳过发布并补齐 Release 和 ZIP。已有同名 ZIP 必须通过 SHA-256 内容核对；相同则复用，冲突则停止，不删除或覆盖。若同一 npm 版本内容不同、tag 来源不同、registry 状态不明，流程也会失败并保留现场。
 
 如果 npm 的 `latest` 已经是更高版本，旧任务不会补发较低版本并把 `latest` 降回去。
 

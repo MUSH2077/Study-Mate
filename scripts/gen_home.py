@@ -6,10 +6,14 @@
 改模板与改这里必须同步。
 
 用法：
-    python3 scripts/gen_home.py              # 工作区取 ~/.dsh/studymate-config.yaml 的 workspace
+    python3 scripts/gen_home.py              # 工作区取环境变量或配置（详见 learn_workspace）
     python3 scripts/gen_home.py <workspace>  # 显式指定工作区（验证时可指向 examples/ 的镜像副本）
 
-读：~/.dsh/studymate-config.yaml、<WS>/.learning/subjects/*/、templates/{home-index,subject-index}.html
+工作区优先级：位置参数 > STUDYMATE_WORKSPACE > LEARN_WORKSPACE > 配置中的 workspace。
+配置可由 STUDYMATE_CONFIG 指定；默认兼容 $DSH_HOME/studymate-config.yaml（~/.dsh）。
+显式工作区不需要安装 DSH，也不会读取 DSH 配置。所有相对路径均按当前目录解析。
+
+读：可选工作区配置、<WS>/.learning/subjects/*/、templates/{home-index,subject-index}.html
 写：<WS>/index.html、<WS>/.learning/subjects/<slug>/index.html、<WS>/.learning/assets/（幂等覆盖）
 
 写完所有页面后有一道链接自检（find_broken_links）：只扫**本次写出的页面**（根主页 + 各科目主页），
@@ -363,16 +367,28 @@ def strip_tags(markup):
 # ══════════════════════════════════════════════════════════════════
 
 def learn_workspace():
-    """从 ~/.dsh/studymate-config.yaml 读 workspace，缺失则报错提示先跑 install.sh。"""
-    cfg_path = os.path.join(os.environ.get('DSH_HOME', os.path.expanduser('~/.dsh')), 'studymate-config.yaml')
-    if not os.path.isfile(cfg_path):
-        raise SystemExit(f'找不到 {cfg_path}，请先运行 install.sh')
-    with open(cfg_path, encoding='utf-8') as f:
-        cfg = yaml.safe_load(f) or {}
+    """优先使用宿主无关的工作区变量；无覆盖时兼容现有 DSH 配置。"""
+    for name in ('STUDYMATE_WORKSPACE', 'LEARN_WORKSPACE'):
+        ws = os.environ.get(name)
+        if ws:
+            return os.path.abspath(os.path.expanduser(ws))
+
+    cfg_path = os.environ.get('STUDYMATE_CONFIG') or os.path.join(
+        os.environ.get('DSH_HOME') or os.path.expanduser('~/.dsh'), 'studymate-config.yaml')
+    cfg_path = os.path.abspath(os.path.expanduser(cfg_path))
+    try:
+        with open(cfg_path, encoding='utf-8') as f:
+            cfg = yaml.safe_load(f)
+    except (OSError, UnicodeError, yaml.YAMLError) as exc:
+        raise SystemExit(
+            f'无法读取工作区配置 {cfg_path}：{exc}\n'
+            '请显式传入工作区路径、设置 STUDYMATE_WORKSPACE，或设置 STUDYMATE_CONFIG。') from None
+    if not isinstance(cfg, dict):
+        raise SystemExit(f'{cfg_path} 必须是包含 workspace 字段的 YAML 映射')
     ws = cfg.get('workspace')
-    if not ws:
-        raise SystemExit('studymate-config.yaml 缺少 workspace，请先运行 install.sh')
-    return ws
+    if not isinstance(ws, str) or not ws.strip():
+        raise SystemExit(f'{cfg_path} 缺少有效的 workspace 路径（必须是非空字符串）')
+    return os.path.abspath(os.path.expanduser(ws))
 
 
 def ensure_shared_assets(ws):
@@ -1261,10 +1277,10 @@ def main(argv):
     args = [arg for arg in argv if not arg.startswith('-')]
     if len(args) > 1:
         raise SystemExit('用法：python3 scripts/gen_home.py [workspace]')
-    # R2：给了位置参数就用它，没给才读配置（learn_workspace() 的行为保持不变）
+    # 显式路径优先于环境变量和配置，适合插件宿主或多个独立学习工作区。
     ws = os.path.abspath(os.path.expanduser(args[0])) if args else learn_workspace()
     if not os.path.isdir(ws):
-        raise SystemExit(f'工作区不存在：{ws}（请先运行 install.sh，或传入正确的工作区路径）')
+        raise SystemExit(f'工作区不存在：{ws}（请先创建目录，或传入正确的工作区路径）')
 
     subjects_dir = os.path.join(ws, '.learning', 'subjects')
     os.makedirs(subjects_dir, exist_ok=True)

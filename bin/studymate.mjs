@@ -5,12 +5,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { adaptSkill } from './skill-compat.mjs';
+import { buildOpenAiPlugin } from './openai-plugin.mjs';
 
 const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const metadata = JSON.parse(fs.readFileSync(path.join(source, 'package.json'), 'utf8'));
 const help = `StudyMate ${metadata.version}
 
 用法：studymate [install] [--workspace <目录>] [--profile <名称>] [--mode standalone|native]
+      studymate build-plugin [--output <目录>]
       studymate --help | --version
 
 将学习模式和引擎安装到 DSH_HOME（默认 ~/.dsh）。
@@ -18,7 +20,10 @@ const help = `StudyMate ${metadata.version}
 DSH 0.1.7+ 默认注册到 web profile；其他 profile 用 --profile 指定。
 默认由安装器管理；已添加 DSH 原生插件时，可用 --mode native 显式切换。
 需要 Node.js ^22.19.0 或 >=24、dsh >=0.1.5-rc.2、Python 3.9+ 和 PyYAML。
-安装器不会安装或升级 dsh，也不会重启正在运行的会话。`;
+安装器不会安装或升级 dsh，也不会重启正在运行的会话。
+
+build-plugin 导出 Codex / ChatGPT Work 技能插件目录及 ZIP（默认 ./dist）。
+导出只需要 Node.js、Python 3.9+ 和 PyYAML，不需要 DSH，也不会更改客户端配置。`;
 
 function run(command, args, extra = {}) {
   return spawnSync(command, args, { encoding: 'utf8', timeout: 15000, windowsHide: true, ...extra });
@@ -292,6 +297,13 @@ export function main(args = process.argv.slice(2)) {
   try {
     if (args.length === 1 && ['--help', '-h'].includes(args[0])) console.log(help);
     else if (args.length === 1 && ['--version', '-v'].includes(args[0])) console.log(metadata.version);
+    else if (args[0] === 'build-plugin') {
+      if (args.length !== 1 && !(args.length === 3 && args[1] === '--output' && args[2] && !args[2].startsWith('--'))) {
+        throw new Error(`用法：studymate build-plugin [--output <目录>]`);
+      }
+      const result = buildOpenAiPlugin({ output: args[2], python: findPython() });
+      console.log(`StudyMate ${result.version} OpenAI 插件已构建。\n插件目录：${result.plugin}\n插件 ZIP：${result.archive}\n安装方法见插件目录中的 README.md。`);
+    }
     else {
       if (args[0] === 'install') args.shift();
       let workspace, profile = 'web', mode = 'standalone';

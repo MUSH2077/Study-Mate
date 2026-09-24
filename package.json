@@ -1,7 +1,7 @@
 {
   "name": "@yunmiao/studymate",
   "version": "0.1.5",
-  "description": "Install the StudyMate learning preset, skills and lesson engine for DeepSeek Harness.",
+  "description": "StudyMate learning skills and lesson engine for DeepSeek Harness, Codex and ChatGPT Work.",
   "bin": {
     "studymate": "bin/studymate.mjs"
   },
@@ -17,6 +17,10 @@
   "files": [
     "cordis.patch.yml",
     "bin/*.mjs",
+    "openai/studymate/.codex-plugin/plugin.json",
+    "openai/studymate/requirements.txt",
+    "openai/studymate/scripts/*.py",
+    "openai/studymate/skills/learning-system/references/*.md",
     ".dsh/skills/**",
     "preset/learning/**",
     "scripts/*.py",
@@ -29,6 +33,8 @@
     "LICENSE"
   ],
   "scripts": {
+    "build:plugin": "node bin/studymate.mjs build-plugin",
+    "test:openai": "node --test scripts/tests/test_openai_plugin.mjs scripts/tests/test_openai_skills.mjs scripts/tests/test_openai_skill_ui.mjs",
     "test:installer": "node --test scripts/tests/test_installer.mjs scripts/tests/test_bundle.mjs",
     "test:dsh": "node --test scripts/tests/test_dsh_runtime.mjs",
     "test:dsh-cli": "node --test scripts/tests/test_dsh_plugin_cli.mjs"
@@ -51,7 +57,9 @@
     "deepseek-harness",
     "studymate",
     "learning",
-    "education"
+    "education",
+    "codex",
+    "chatgpt"
   ],
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",

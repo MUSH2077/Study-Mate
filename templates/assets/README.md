@@ -10,7 +10,7 @@
 | `sayo/` | **Sayo UI**（自研零依赖 CSS 框架 + 交互引擎），MIT。含 `sayo.css`、`sayo.js`、`icons/`、`LICENSE` | 从 sayo-ui 项目整体拷贝，**不要手改** |
 | `learn-theme.css` | 本项目**共享主题层**：亮色=暖纸白+深绿（覆盖 `--syo-*`）、暗色=用 Sayo 默认的 Primer 暗色；修正 Sayo 里为暗色硬编码的紫色光晕；放跨页面组件（进度条、状态徽标、筛选、空状态） | 本项目自研，改色只改这里 |
 | `learn-theme.js` | **共享行为层**：① 主题（亮/暗）逻辑——早期应用、切换并持久化、绑定开关（`LearnTheme.apply/set/toggle/current/wire`）；② **代码块高亮**——课件里的 `<pre><code>` 与 `.syo-editor` 加载即自动上色（`LearnTheme.highlight`）。三个页面共用，别各写一份 | 本项目自研 |
-| `katex/` | **KaTeX 0.18.7**（MIT，见 `katex/LICENSE`）：离线数学排版。`katex.min.css` + `katex.min.js` + `fonts/*.woff2`（20 个）。**已裁剪**：CSS 里去掉了 woff/ttf 回退，只留 woff2 | 从 KaTeX 官方 dist 整体拷贝，**不要手改**（更新步骤见下） |
+| `katex/` | **KaTeX 0.18.7**：离线数学排版。JS/CSS 使用 MIT（见 `katex/LICENSE`）；20 个 `fonts/*.woff2` 字体的嵌入许可为 SIL OFL 1.1（见 `katex/fonts/LICENSE`）。**已裁剪**：CSS 里去掉了 woff/ttf 回退，只留 woff2 | 从 KaTeX 官方 dist 拷贝，保留代码与字体的许可证，**不要手改字体**（更新步骤见下） |
 | `lesson-math.js` | **公式渲染**：页面加载后把 `.math-inline` / `.math-block` 里的 TeX 交给 KaTeX 排版。降级可读——KaTeX 没加载成功时元素里留着的就是 TeX 原文 | 本项目自研；**只有含公式的课件页引用它** |
 | `learn-mascot.png` | **抬头看板娘**（640×425，256 色带 alpha，23KB）：透明底 + 底部羽化，给根主页抬头当主视觉（`.learn-hero__mascot`） | 本项目自研；**只有根主页引用它**，科目页与课件不引用 |
 | `style.css` | **课件层**（讲解排版 + 练习样式），叠在 Sayo 之上 | 本项目自研；Task 8 拷进每个科目 |
@@ -25,7 +25,7 @@
 └── .learning/
     ├── assets/                                 # ← 全工作区共享一份
     │   ├── sayo/{sayo.css,sayo.js,icons/,LICENSE}
-    │   ├── katex/{katex.min.css,katex.min.js,fonts/*.woff2,LICENSE}
+    │   ├── katex/{katex.min.css,katex.min.js,fonts/*.woff2,fonts/LICENSE,LICENSE}
     │   ├── learn-theme.css
     │   ├── learn-theme.js
     │   ├── learn-mascot.png
@@ -95,10 +95,13 @@ cp -r <sayo-ui>/icons templates/assets/sayo/icons
 
 ## 更新 KaTeX 的方式
 
+代码许可证来自 [KaTeX 官方仓库](https://github.com/KaTeX/KaTeX/blob/v0.18.7/LICENSE)。字体的版权主体、年份和保留字体名称来自随包 20 个 WOFF2 的嵌入元数据：Design Science, Inc.（2009–2010）与 Khan Academy（2014–2018）；版权与许可也核对了官方字体仓库的 [KaTeX_Main-Regular.ttf](https://github.com/KaTeX/katex-fonts/blob/master/fonts/KaTeX_Main-Regular.ttf)。`katex/fonts/LICENSE` 汇总这些已有声明，并附 [SIL 官方 OFL 1.1 原文](https://openfontlicense.org/documents/OFL.txt)。本项目未修改字体文件。
+
 ```bash
 npm pack katex@<版本> && tar xzf katex-*.tgz
 cp package/dist/katex.min.js package/LICENSE templates/assets/katex/
 cp package/dist/fonts/*.woff2 templates/assets/katex/fonts/
+# 保留 fonts/LICENSE；升级字体时核对嵌入版权与保留字体名称，必要时同步更新该文件
 # 再把 dist/katex.min.css 裁剪成只留 woff2（去掉 woff / ttf 两条回退），并在文件头写一行来源与裁剪说明
 ```
 

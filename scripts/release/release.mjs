@@ -12,6 +12,9 @@ const REGISTRY = 'https://registry.npmjs.org/';
 const VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 const RELEASE_TAG = /^v(0|[1-9]\d*)\.(0|[1-9]\d*)(?:\.(0|[1-9]\d*))?$/;
 const TAG_MARKER = 'StudyMate release metadata\n';
+const OPENAI_ASSET = 'studymate-openai.zip';
+const INSTALLATION_START = '<!-- studymate-installation -->';
+const INSTALLATION_END = '<!-- /studymate-installation -->';
 const STATE = () => join(process.env.RUNNER_TEMP || tmpdir(), 'studymate-release-state.json');
 
 function command(name, args, { cwd = process.cwd(), input, allowFailure = false } = {}) {
@@ -169,16 +172,20 @@ function requireWorkflow() {
 export function validatePack(pack) {
   if (pack.name !== PACKAGE || !VERSION.test(pack.version)) throw new Error('Unexpected npm package identity.');
   const files = pack.files.map(file => file.path);
-  const allowed = /^(?:package\.json|cordis\.patch\.yml|README\.md|LICENSE|CHANGELOG\.md|bin\/[^/]+\.mjs|\.dsh\/skills\/.+|preset\/learning\/.+|scripts\/[^/]+\.py|schemas\/[^/]+\.json|templates\/.+|docs\/[^/]+\.md|docs\/images\/.+)$/;
+  const allowed = /^(?:package\.json|cordis\.patch\.yml|README\.md|LICENSE|CHANGELOG\.md|bin\/[^/]+\.mjs|openai\/studymate\/(?:\.codex-plugin\/plugin\.json|requirements\.txt|scripts\/[^/]+\.py|skills\/learning-system\/references\/[^/]+\.md)|\.dsh\/skills\/.+|preset\/learning\/.+|scripts\/[^/]+\.py|schemas\/[^/]+\.json|templates\/.+|docs\/[^/]+\.md|docs\/images\/.+)$/;
   for (const file of files) {
     if (!allowed.test(file) || /(^|\/)(?:\.env(?:\..*)?|\.npmrc|\.git|node_modules|__pycache__|\.DS_Store|[^/]+\.pyc)(\/|$)/.test(file)) {
       throw new Error(`Unexpected or private file in npm tarball: ${file}`);
     }
   }
-  for (const required of ['cordis.patch.yml', 'bin/dsh-plugin.mjs', 'bin/studymate.mjs', 'bin/skill-compat.mjs', 'preset/learning/agent.cordis.yml', 'scripts/install_preset.py', 'scripts/gen_home.py', '.dsh/skills/learning-system/SKILL.md']) {
+  for (const required of ['cordis.patch.yml', 'bin/dsh-plugin.mjs', 'bin/studymate.mjs', 'bin/skill-compat.mjs', 'bin/openai-plugin.mjs', 'bin/openai-skill-compat.mjs', 'openai/studymate/.codex-plugin/plugin.json', 'openai/studymate/requirements.txt', 'docs/Codex与ChatGPT.md', 'preset/learning/agent.cordis.yml', 'scripts/install_preset.py', 'scripts/gen_home.py', '.dsh/skills/learning-system/SKILL.md']) {
     if (!files.includes(required)) throw new Error(`npm tarball is missing ${required}.`);
   }
   for (const prefix of ['schemas/', 'templates/', 'docs/']) if (!files.some(file => file.startsWith(prefix))) throw new Error(`npm tarball is missing ${prefix}.`);
+  for (const required of ['bin/openai-interaction.mjs', 'bin/openai-skill-ui.mjs',
+    'openai/studymate/scripts/interaction_state.py', 'openai/studymate/skills/learning-system/references/codex-interaction.md']) {
+    if (!files.includes(required)) throw new Error(`npm tarball is missing ${required}.`);
+  }
 }
 
 function packPackage() {
@@ -189,6 +196,129 @@ function packPackage() {
   const integrity = `sha512-${createHash('sha512').update(readFileSync(file)).digest('base64')}`;
   if (integrity !== pack.integrity) throw new Error('Packed tarball does not match npm integrity.');
   return { ...pack, file };
+}
+
+// Build from the prepared checkout: the builder sets the plugin manifest version
+// from package.json and uses deterministic ZIP timestamps for safe CI retries.
+export function buildReleasePlugin(version, execute = command) {
+  const directory = mkdtempSync(join(process.env.RUNNER_TEMP || tmpdir(), 'studymate-openai-release-'));
+  execute(process.execPath, ['bin/studymate.mjs', 'build-plugin', '--output', directory]);
+  const manifest = jsonFile(join(directory, 'studymate', '.codex-plugin', 'plugin.json'));
+  if (manifest.version !== version) throw new Error('Built plugin version differs from the prepared release.');
+  const file = join(directory, OPENAI_ASSET);
+  const bytes = readFileSync(file);
+  if (bytes.length < 4 || bytes.readUInt32LE(0) !== 0x04034b50) throw new Error('Plugin build did not produce a ZIP archive.');
+  return { name: OPENAI_ASSET, file, bytes, size: bytes.length,
+    digest: `sha256:${createHash('sha256').update(bytes).digest('hex')}` };
+}
+
+export function withInstallationNotes(body, version) {
+  const installation = `${INSTALLATION_START}\n### 安装\n\n` +
+    `**DeepSeek Harness (DSH)**：\n\n\`\`\`sh\nnpx ${PACKAGE}@${version}\n\`\`\`\n\n` +
+    `**Codex / ChatGPT Work**：[下载同版本 OpenAI 插件 ZIP](https://github.com/${REPOSITORY}/releases/download/v${version}/${OPENAI_ASSET})。` +
+    `解压后按包内使用指南安装；学习数据保存在插件目录之外。\n${INSTALLATION_END}`;
+  const start = body.indexOf(INSTALLATION_START);
+  const end = body.indexOf(INSTALLATION_END);
+  if (start < 0 && end < 0) return `${body.trim()}\n\n${installation}\n`;
+  if (start < 0 || end < start) throw new Error('GitHub release installation notes have incomplete markers.');
+  return body.slice(0, start) + installation + body.slice(end + INSTALLATION_END.length);
+}
+
+export async function ensureGithubRelease(state, notes, request = github) {
+  let release = await request(`/releases/tags/${state.tag}`, { missing: true });
+  if (!release) {
+    return request('/releases', { method: 'POST', body: {
+      tag_name: state.tag, target_commitish: state.commit, name: state.tag, make_latest: 'legacy',
+      body: withInstallationNotes(notes, state.version), draft: false, prerelease: false,
+    } });
+  }
+  if (release.draft || release.prerelease || release.tag_name !== state.tag) {
+    throw new Error(`GitHub ${state.tag} is not the expected stable release; inspect it before retrying.`);
+  }
+  const body = withInstallationNotes(release.body || notes, state.version);
+  if (body !== release.body) {
+    release = await request(`/releases/${release.id}`, { method: 'PATCH', body: { body } });
+  }
+  return release;
+}
+
+async function matchingReleaseAsset(release, name, request) {
+  let found = null;
+  for (let page = 1; ; page++) {
+    const assets = await request(`/releases/${release.id}/assets?per_page=100&page=${page}`);
+    for (const asset of assets) {
+      if (asset.name !== name) continue;
+      if (found) throw new Error(`Multiple GitHub assets named ${name}; inspect the release before retrying.`);
+      found = asset;
+    }
+    if (assets.length < 100) return found;
+  }
+}
+
+async function verifyReleaseAsset(asset, local, transfer) {
+  if (asset.state !== 'uploaded') {
+    throw new Error(`GitHub asset ${local.name} has incomplete state '${asset.state}'. Inspect the failed upload before retrying; no asset was deleted or overwritten.`);
+  }
+  if (asset.size !== local.size) throw new Error(`GitHub asset ${local.name} already exists with different contents (size). Refusing to overwrite it.`);
+  let digest = asset.digest;
+  if (!/^sha256:[0-9a-f]{64}$/i.test(digest || '')) {
+    // Older assets may not have a server digest. Download via the authenticated
+    // API endpoint rather than trusting an arbitrary browser_download_url.
+    if (!Number.isSafeInteger(asset.id) || asset.id < 1) throw new Error('Invalid GitHub asset identity.');
+    const response = await transfer(`https://api.github.com/repos/${REPOSITORY}/releases/assets/${asset.id}`, {
+      headers: { Authorization: `Bearer ${process.env.GH_TOKEN}`, Accept: 'application/octet-stream', 'X-GitHub-Api-Version': '2022-11-28' },
+      signal: AbortSignal.timeout(120_000),
+    });
+    if (!response.ok) throw new Error(`Cannot verify existing GitHub asset ${local.name}: HTTP ${response.status}.`);
+    const bytes = Buffer.from(await response.arrayBuffer());
+    digest = `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
+  }
+  if (digest.toLowerCase() !== local.digest.toLowerCase()) {
+    throw new Error(`GitHub asset ${local.name} already exists with different contents (SHA256). Refusing to overwrite it.`);
+  }
+}
+
+/** Upload immutable release content or verify it on retry; never replace assets.
+ * GitHub's raw upload, SHA256 digest and starter-state behavior are documented at
+ * https://docs.github.com/en/rest/releases/assets#upload-a-release-asset
+ */
+export async function ensureReleaseAsset(release, local, { request = github, transfer = fetch } = {}) {
+  if (!Number.isSafeInteger(release.id) || release.id < 1) throw new Error('Invalid GitHub release identity.');
+  const existing = await matchingReleaseAsset(release, local.name, request);
+  if (existing) {
+    await verifyReleaseAsset(existing, local, transfer);
+    return { asset: existing, skipped: true };
+  }
+  const upload = new URL((release.upload_url || '').replace(/\{[^}]*\}$/, ''));
+  if (upload.origin !== 'https://uploads.github.com' || upload.username || upload.password ||
+      upload.pathname !== `/repos/${REPOSITORY}/releases/${release.id}/assets`) {
+    throw new Error('Unexpected GitHub upload URL; refusing to send release credentials.');
+  }
+  upload.search = '';
+  upload.hash = '';
+  upload.searchParams.set('name', local.name);
+  let asset;
+  try {
+    const response = await transfer(upload.href, {
+      method: 'POST', headers: { Authorization: `Bearer ${process.env.GH_TOKEN}`, Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28', 'Content-Type': 'application/zip', 'Content-Length': String(local.size) },
+      body: local.bytes, redirect: 'error', signal: AbortSignal.timeout(120_000),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status} ${await response.text()}`);
+    asset = await response.json();
+  } catch (error) {
+    // A lost response or a duplicate-upload race can follow a successful upload.
+    // Reconcile once by reading remote state, without deleting or retrying POST.
+    const recovered = await matchingReleaseAsset(release, local.name, request);
+    if (recovered) {
+      await verifyReleaseAsset(recovered, local, transfer);
+      return { asset: recovered, skipped: true, recovered: true };
+    }
+    throw new Error(`GitHub upload ${local.name} could not be verified: ${error.message}. Re-run this workflow after inspecting the release.`);
+  }
+  if (asset.name !== local.name) throw new Error(`GitHub returned an unexpected uploaded asset name: ${asset.name}.`);
+  await verifyReleaseAsset(asset, local, transfer);
+  return { asset, skipped: false };
 }
 
 async function prepare() {
@@ -264,6 +394,8 @@ async function publish() {
   if (state.source !== process.env.GITHUB_SHA || git(['rev-parse', 'HEAD']) !== state.commit || git(['rev-parse', `${state.tag}^{commit}`]) !== state.commit) {
     throw new Error('Release state, checkout and tag do not agree.');
   }
+  // A plugin build failure must happen before the immutable npm publication.
+  const plugin = buildReleasePlugin(state.version);
   const pack = packPackage();
   if (pack.version !== state.version) throw new Error('Packed version differs from the prepared release.');
   let remote = await registryVersion(pack.version);
@@ -281,17 +413,10 @@ async function publish() {
     if (!remote) throw new Error(`npm publication could not be verified (exit ${result.status}). Re-run this workflow after checking npm.`);
   }
   verifyPublished(remote, pack);
-  const existing = await github(`/releases/tags/${state.tag}`, { missing: true });
-  if (!existing) {
-    const notes = notesFromChangelog(readFileSync('CHANGELOG.md', 'utf8'), state.version);
-    await github('/releases', { method: 'POST', body: {
-      tag_name: state.tag, target_commitish: state.commit, name: state.tag, make_latest: 'legacy',
-      body: `${notes}\n\n安装：\n\n\`\`\`sh\nnpx ${PACKAGE}@${state.version}\n\`\`\`\n`, draft: false, prerelease: false,
-    } });
-  } else if (existing.draft || existing.prerelease) {
-    throw new Error(`GitHub ${state.tag} already exists as a draft/prerelease; inspect it before retrying.`);
-  }
-  summary(`Published [${PACKAGE}@${state.version}](https://www.npmjs.com/package/${PACKAGE}/v/${state.version}) and [${state.tag}](https://github.com/${REPOSITORY}/releases/tag/${state.tag}).`);
+  const notes = notesFromChangelog(readFileSync('CHANGELOG.md', 'utf8'), state.version);
+  const release = await ensureGithubRelease(state, notes);
+  const uploaded = await ensureReleaseAsset(release, plugin);
+  summary(`Published [${PACKAGE}@${state.version}](https://www.npmjs.com/package/${PACKAGE}/v/${state.version}) and [${state.tag}](https://github.com/${REPOSITORY}/releases/tag/${state.tag}) with [${OPENAI_ASSET}](https://github.com/${REPOSITORY}/releases/download/${state.tag}/${OPENAI_ASSET})${uploaded.skipped ? ' (verified existing ZIP)' : ''}. ZIP SHA256: \`${plugin.digest.slice('sha256:'.length)}\`.`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
