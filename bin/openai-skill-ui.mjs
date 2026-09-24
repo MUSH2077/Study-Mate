@@ -44,6 +44,12 @@ const skills = new Map([
     short_description: '接受学习总控派工，设计练习与实验任务并依据真实作答和运行证据评估',
     default_prompt: '请用 $practice-evaluator 按学习总控指定的节点和任务阶段完成出题或证据评估。',
   }],
+  ['learning-discovery', {
+    description: 'StudyMate 方向探索内部规范：学生不知道学什么或主动要求帮选方向时，由学习总控亲自执行探索访谈、给候选方向并在确认后交接原建课流程。明确科目与恢复学习不进入探索。',
+    display_name: 'StudyMate · 方向探索',
+    short_description: '供学习总控在学生没有明确方向时访谈、给候选并交接建课',
+    default_prompt: '请用 $learning-discovery 的内部协议帮我从几个候选学习方向里选一个。',
+  }],
   ['record-keeping', {
     description: 'StudyMate 档案维护内部规范：由学习总控读取并执行，规定共享记忆、学习进度、评估记录与会话恢复的文件归属和更新规则。',
     display_name: 'StudyMate · 学习档案',

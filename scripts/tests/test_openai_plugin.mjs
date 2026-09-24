@@ -32,7 +32,7 @@ test('exported ZIP contains complete portable skills and renders without DSH or 
   const manifest = JSON.parse(fs.readFileSync(path.join(plugin, '.codex-plugin/plugin.json'), 'utf8'));
   assert.equal(manifest.name, 'studymate');
   assert.equal(manifest.version, JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version);
-  assert.equal(fs.readdirSync(path.join(plugin, 'skills')).length, 11);
+  assert.equal(fs.readdirSync(path.join(plugin, 'skills')).length, 12);
   for (const asset of ['skills/learning-system/SKILL.md', 'skills/learning-system/references/codex-interaction.md',
     'scripts/interaction_state.py', 'assets/logo.png', 'templates/lesson.html', 'templates/assets/katex/fonts/LICENSE', 'schemas/curriculum.schema.json', 'scripts/render_lesson.py', 'docs/文件归属.md', 'requirements.txt']) {
     assert.ok(fs.existsSync(path.join(plugin, asset)), asset);
@@ -67,7 +67,7 @@ test('exported ZIP contains complete portable skills and renders without DSH or 
   assert.equal(answered.answers['python-project-1'].value, '分析 CSV 报表');
   const policies = JSON.parse(runPython(['-c',
     'import json,pathlib,sys,yaml; root=pathlib.Path(sys.argv[1]); print(json.dumps({p.parent.parent.name: yaml.safe_load(p.read_text(encoding="utf-8"))["policy"]["allow_implicit_invocation"] for p in root.glob("skills/*/agents/openai.yaml")}))', plugin], env));
-  assert.equal(Object.keys(policies).length, 11);
+  assert.equal(Object.keys(policies).length, 12);
   assert.equal(policies['learning-system'], true);
   for (const role of ['curriculum-designer', 'image-scout', 'learning-coach', 'practice-evaluator', 'resource-scout']) {
     assert.equal(policies[role], false, role);

@@ -14,7 +14,7 @@ const sources = new Map(skills.map(name => [name,
 const adapted = new Map(skills.map(name => [name, adaptOpenAiSkill(sources.get(name), name)]));
 
 test('all bundled skills export only portable metadata and no DSH tool requirements', () => {
-  assert.equal(skills.length, 11);
+  assert.equal(skills.length, 12);
   for (const [name, content] of adapted) {
     const frontmatter = content.match(/^---\n([\s\S]*?)\n---\n/);
     assert.ok(frontmatter, name);
