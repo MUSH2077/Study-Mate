@@ -1,5 +1,19 @@
 # 更新日志
 
+<!-- studymate-release:v0.2.0 -->
+## [0.2.0](https://github.com/Miaotofu01/Study-Mate/releases/tag/v0.2.0) - 2026-09-24
+
+### 所有提交
+
+- feat(gpt插件)：新增的codex/gpt插件支持 ([7e2552e](https://github.com/Miaotofu01/Study-Mate/commit/7e2552e8823d4c6423ba3c799cf26607fe3932b0))
+- feat(gpt插件)：新增的codex/gpt插件支持 ([838604f](https://github.com/Miaotofu01/Study-Mate/commit/838604f0916e85006efb645bb7ba1276f397d0a2))
+
+  > 修复 Windows Node 22.19 中文路径下测试示例复制，保留插件导出和课件渲染回归。
+
+
+[完整比较](https://github.com/Miaotofu01/Study-Mate/compare/v0.1.5...v0.2.0)
+<!-- /studymate-release:v0.2.0 -->
+
 <!-- studymate-release:v0.1.5 -->
 ## [0.1.5](https://github.com/Miaotofu01/Study-Mate/releases/tag/v0.1.5) - 2026-09-24
 
