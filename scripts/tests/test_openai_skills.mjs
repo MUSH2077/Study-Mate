@@ -71,7 +71,7 @@ test('teaching contracts and role ownership survive export', () => {
     assert.ok(adapted.get(name).endsWith(`${originalBody}\n`), `${name} teaching text changed`);
   }
   for (const [name, terms] of [
-    ['learning-coach', ['你只写内容、留题目位置', '尤其别补 `empty_reason`', '正式渲染与 `check_lesson.py` 归总控']],
+    ['learning-coach', ['你只写内容、留题目位置', '尤其别补 `empty_reason`', '**内容文件里只有内容格式。**']],
     ['practice-evaluator', ['全系统的题都由你出', '作答原文', '题目的唯一 owner']],
     ['learning-system', ['锚点是讲解的产物', '题面与答案一个字都不改', '同一科目同时只有一个写入者']],
     ['record-keeping', ['建课时的初始快照', '已通过项目验证', '写一条当且仅当出现可观察的证据']],
