@@ -6,6 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { supportsDsh, findPython } from '../../bin/studymate.mjs';
+import { adaptSkill } from '../../bin/skill-compat.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const cli = path.join(root, 'bin/studymate.mjs');
@@ -46,6 +47,19 @@ test('minimum DSH prerelease is compared correctly', () => {
   for (const version of ['0.1.4', '0.1.5-alpha.9', '0.1.5-rc.1', 'bad']) assert.equal(supportsDsh(version), false, version);
 });
 
+test('installed skill copies get the write-boundary conventions in machine terms', () => {
+  const sample = ['暂存模式：`<WS>` = `/tmp/studymate-stage/<slug>`',
+    '角色产出走 `<subject_path>/.stage/practice-evaluator-<节点id>/deliver/`',
+    'cp -r /tmp/practice-evaluator-<节点id>/deliver/. <subject_path>/'].join('\n');
+  const adapted = adaptSkill(sample, {
+    platform: 'win32', pythonExecutable: 'C:\\Python\\python.exe',
+    configFile: 'C:\\Users\\me\\.dsh\\studymate-config.yaml', tempDirectory: 'C:/Temp',
+  });
+  assert.ok(!adapted.includes('`/tmp`'), '临时目录应换成本机实值');
+  assert.match(adapted, /C:\/Temp\/studymate-stage\/<slug>/);
+  assert.match(adapted, /先写科目自己的 `<subject_path>\/\.stage\//);
+});
+
 test('install, reinstall and downgrade preserve workspace and unrelated profile configuration', t => {
   const f = fixture(t);
   fs.mkdirSync(path.dirname(f.patch), { recursive: true });
@@ -70,6 +84,14 @@ test('install, reinstall and downgrade preserve workspace and unrelated profile 
   assert.deepEqual(plugins.find(plugin => plugin.id === 'skill-filesystem').config.customSkillDirs,
     [path.join(f.env.DSH_HOME, 'studymate', 'engine', '.dsh', 'skills').split(path.sep).join('/')]);
   assert.match(fs.readFileSync(f.preset, 'utf8'), /@deepseek-ai\/dsh-workflow-ptc/);
+  // 安装完必须说清"会话开在哪"：会话目录不在工作区里时，StudyMate 每一步落盘都要授权。
+  assert.match(result.stdout, /启动会话时把工作目录设为/);
+  // 装出来的技能副本是本机口径：暂存约定保留，`/tmp` 写成这台机器的临时目录
+  // （Linux 上两者常常都是 /tmp，所以真正钉住改写的是下面那条注入临时目录的断言）。
+  const skillCopy = fs.readFileSync(path.join(f.env.DSH_HOME, 'studymate', 'engine',
+    '.dsh', 'skills', 'learning-system', 'SKILL.md'), 'utf8');
+  assert.match(skillCopy, /<subject_path>\/\.stage\//);
+  assert.ok(skillCopy.includes('.studymate-stage/<slug>'), '暂存根应落在会话目录下');
   const config = f.yaml(f.config);
   config.custom = 'keep';
   fs.writeFileSync(f.config, JSON.stringify(config));

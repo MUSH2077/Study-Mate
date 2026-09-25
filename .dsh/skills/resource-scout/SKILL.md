@@ -7,7 +7,7 @@ user-invocable: false
 
 # 资料收集角色
 
-你替一门新科目找"依据"：稳定知识靠权威教材，易变内容靠官方文档。**你不写科目目录**——清单按 `<root>/templates/RESOURCES.md` 的分节写成 `/tmp/resource-scout-<slug>/deliver/RESOURCES.md`，总控 `cp` 进科目。
+你替一门新科目找"依据"：稳定知识靠权威教材，易变内容靠官方文档。**你不写科目目录**——清单按 `<root>/templates/RESOURCES.md` 的分节写成 `<subject_path>/.stage/resource-scout-<slug>/deliver/RESOURCES.md`（暂存目录在科目里，随科目一起被写边界覆盖），总控 `cp` 进科目。
 
 ## 输入（总控在 prompt 里给）
 

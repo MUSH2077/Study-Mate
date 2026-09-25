@@ -314,7 +314,7 @@ function install(workspaceArg, profile, mode) {
   const { registration, engine, preset, configFile, workspace } = installPayload({ workspaceArg, profile, python, version, mode });
   const registered = registration.mode === 'bundle' ? `\n学习模式由 DSH 插件管理：${profile}`
     : registration.mode === 'declarative' ? `\n已注册到 DSH profile：${profile}` : '';
-  console.log(`StudyMate ${metadata.version} 安装完成。\n引擎：${engine}\n学习预设：${preset}${registered}\n学习工作区：${workspace}\n配置：${configFile}\n请在 dsh 中新建会话并选择“学习模式”；已运行的 dsh 如未显示该模式，请重启。`);
+  console.log(`StudyMate ${metadata.version} 安装完成。\n引擎：${engine}\n学习预设：${preset}${registered}\n学习工作区：${workspace}\n配置：${configFile}\n请在 dsh 中新建会话并选择“学习模式”；已运行的 dsh 如未显示该模式，请重启。\n启动会话时把工作目录设为 ${workspace}，并把会话权限选成 workspace-write 或 danger-full-access：学习数据都写在那个目录里，会话目录不在它里面时，每次落盘都会要求你授权。`);
 }
 
 export function main(args = process.argv.slice(2)) {
